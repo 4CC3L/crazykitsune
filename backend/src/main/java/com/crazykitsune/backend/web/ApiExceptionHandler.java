@@ -4,7 +4,6 @@ import com.crazykitsune.backend.generated.model.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.Instant;
 import java.util.List;
-import org.openapitools.jackson.nullable.JsonNullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
