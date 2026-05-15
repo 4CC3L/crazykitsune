@@ -1,0 +1,204 @@
+openapi: 3.0.3
+info:
+  title: Crazy Kitsune Backend API
+  version: 1.0.0
+  description: Contrato base para sala, estado y comandos realtime de Crazy Kitsune.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/rooms:
+    post:
+      summary: Crear sala
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayerRequest'
+      responses:
+        '200':
+          description: Sala creada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomJoinResponse'
+  /api/rooms/{roomCode}/join:
+    post:
+      summary: Unirse a sala
+      parameters:
+        - in: path
+          name: roomCode
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlayerRequest'
+      responses:
+        '200':
+          description: Union exitosa
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomJoinResponse'
+  /api/rooms/{roomCode}/state:
+    get:
+      summary: Estado visible para un jugador
+      parameters:
+        - in: path
+          name: roomCode
+          required: true
+          schema:
+            type: string
+        - in: query
+          name: playerId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Estado actual de la partida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameView'
+  /api/rules:
+    get:
+      summary: Reglas del juego
+      responses:
+        '200':
+          description: Reglas resumidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RulesView'
+components:
+  schemas:
+    PlayerRequest:
+      type: object
+      required: [playerName]
+      properties:
+        playerName:
+          type: string
+    RoomJoinResponse:
+      type: object
+      properties:
+        roomCode:
+          type: string
+        playerId:
+          type: string
+        state:
+          $ref: '#/components/schemas/GameView'
+    GameView:
+      type: object
+      properties:
+        roomCode:
+          type: string
+        playerId:
+          type: string
+        playerName:
+          type: string
+        started:
+          type: boolean
+        host:
+          type: boolean
+        currentTurn:
+          type: boolean
+        winnerId:
+          type: string
+          nullable: true
+        winnerName:
+          type: string
+          nullable: true
+        matchRank:
+          type: string
+          nullable: true
+        matchSuit:
+          type: string
+          nullable: true
+        pendingDraw:
+          type: integer
+        drawPileCount:
+          type: integer
+        hand:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardView'
+        discard:
+          type: array
+          items:
+            $ref: '#/components/schemas/CardView'
+        players:
+          type: array
+          items:
+            $ref: '#/components/schemas/PlayerSummary'
+        log:
+          type: array
+          items:
+            type: string
+        version:
+          type: integer
+    CardView:
+      type: object
+      properties:
+        id:
+          type: string
+        rank:
+          type: string
+        suit:
+          type: string
+        label:
+          type: string
+    PlayerSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        cardCount:
+          type: integer
+        host:
+          type: boolean
+        currentTurn:
+          type: boolean
+        winner:
+          type: boolean
+    RulesView:
+      type: object
+      properties:
+        gameName:
+          type: string
+        basics:
+          type: array
+          items:
+            type: string
+        poweredCards:
+          type: array
+          items:
+            type: string
+        implementationNotes:
+          type: array
+          items:
+            type: string
+    ErrorResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+        path:
+          type: string
+        details:
+          type: array
+          items:
+            type: string
