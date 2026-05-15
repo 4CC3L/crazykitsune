@@ -1,10 +1,10 @@
 package com.crazykitsune.backend.service;
 
-import com.crazykitsune.backend.contract.response.GameView;
-import com.crazykitsune.backend.contract.response.RoomJoinResponse;
 import com.crazykitsune.backend.domain.GameSettings;
 import com.crazykitsune.backend.domain.Player;
 import com.crazykitsune.backend.domain.Room;
+import com.crazykitsune.backend.generated.model.GameView;
+import com.crazykitsune.backend.generated.model.RoomJoinResponse;
 import java.security.SecureRandom;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
@@ -40,7 +40,10 @@ public class RoomService {
         room.appendLog(player.getName() + " creo la sala.");
         roomRepository.save(room);
         notificationService.publish(room, "Sala creada por " + player.getName());
-        return new RoomJoinResponse(room.getCode(), player.getId(), gameViewMapper.toView(room, player.getId()));
+        return new RoomJoinResponse()
+            .roomCode(room.getCode())
+            .playerId(player.getId())
+            .state(gameViewMapper.toView(room, player.getId()));
     }
 
     public RoomJoinResponse joinRoom(String roomCode, String rawPlayerName) {
@@ -63,7 +66,10 @@ public class RoomService {
             room.incrementVersion();
             room.appendLog(player.getName() + " se unio a la sala.");
             notificationService.publish(room, player.getName() + " se unio a la sala");
-            return new RoomJoinResponse(room.getCode(), player.getId(), gameViewMapper.toView(room, player.getId()));
+            return new RoomJoinResponse()
+                .roomCode(room.getCode())
+                .playerId(player.getId())
+                .state(gameViewMapper.toView(room, player.getId()));
         } finally {
             room.getLock().unlock();
         }

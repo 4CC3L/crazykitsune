@@ -4,7 +4,6 @@ import com.crazykitsune.backend.domain.Card;
 import com.crazykitsune.backend.domain.GameSettings;
 import com.crazykitsune.backend.domain.Player;
 import com.crazykitsune.backend.domain.Room;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -13,8 +12,6 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class DeckService {
-
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RulesService rulesService;
 

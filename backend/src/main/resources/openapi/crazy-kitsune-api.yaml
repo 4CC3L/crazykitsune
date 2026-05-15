@@ -8,6 +8,8 @@ servers:
 paths:
   /api/rooms:
     post:
+      tags: [rooms]
+      operationId: createRoom
       summary: Crear sala
       requestBody:
         required: true
@@ -22,8 +24,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomJoinResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/rooms/{roomCode}/join:
     post:
+      tags: [rooms]
+      operationId: joinRoom
       summary: Unirse a sala
       parameters:
         - in: path
@@ -44,8 +54,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomJoinResponse'
+        '400':
+          description: Solicitud invalida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Sala no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/rooms/{roomCode}/state:
     get:
+      tags: [rooms]
+      operationId: getRoomState
       summary: Estado visible para un jugador
       parameters:
         - in: path
@@ -65,8 +89,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameView'
+        '404':
+          description: Sala o jugador no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
   /api/rules:
     get:
+      tags: [rules]
+      operationId: getRules
       summary: Reglas del juego
       responses:
         '200':
@@ -83,6 +115,7 @@ components:
       properties:
         playerName:
           type: string
+          minLength: 1
     RoomJoinResponse:
       type: object
       properties:
