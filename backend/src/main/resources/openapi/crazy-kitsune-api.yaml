@@ -11,21 +11,25 @@ paths:
       tags: [rooms]
       operationId: createRoom
       summary: Crear sala
+      description: |
+        Crea una nueva sala de Crazy Kitsune, registra al jugador solicitante como anfitrion
+        y devuelve el estado inicial visible para ese jugador.
       requestBody:
         required: true
+        description: Datos minimos del jugador que crea la sala.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PlayerRequest'
       responses:
         '200':
-          description: Sala creada
+          description: Sala creada correctamente con codigo y estado inicial del anfitrion.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomJoinResponse'
         '400':
-          description: Solicitud invalida
+          description: El contrato recibido no es valido o el nombre del jugador no cumple las reglas.
           content:
             application/json:
               schema:
@@ -35,33 +39,38 @@ paths:
       tags: [rooms]
       operationId: joinRoom
       summary: Unirse a sala
+      description: |
+        Agrega un jugador a una sala existente antes del inicio de la partida y devuelve
+        el estado visible para ese nuevo participante.
       parameters:
         - in: path
           name: roomCode
           required: true
+          description: Codigo corto y unico que identifica la sala objetivo.
           schema:
             type: string
       requestBody:
         required: true
+        description: Datos del jugador que desea unirse a la sala.
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/PlayerRequest'
       responses:
         '200':
-          description: Union exitosa
+          description: El jugador fue agregado a la sala y recibe su estado inicial.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RoomJoinResponse'
         '400':
-          description: Solicitud invalida
+          description: La solicitud incumple el contrato o la sala ya no admite nuevos jugadores.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '404':
-          description: Sala no encontrada
+          description: No existe una sala asociada al codigo proporcionado.
           content:
             application/json:
               schema:
@@ -71,26 +80,31 @@ paths:
       tags: [rooms]
       operationId: getRoomState
       summary: Estado visible para un jugador
+      description: |
+        Recupera la vista actual de la partida filtrada para un jugador especifico,
+        incluyendo su mano privada y la informacion publica de la sala.
       parameters:
         - in: path
           name: roomCode
           required: true
+          description: Codigo corto y unico de la sala consultada.
           schema:
             type: string
         - in: query
           name: playerId
           required: true
+          description: Identificador unico del jugador cuya vista privada debe devolverse.
           schema:
             type: string
       responses:
         '200':
-          description: Estado actual de la partida
+          description: Estado actual visible para el jugador solicitado.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GameView'
         '404':
-          description: Sala o jugador no encontrado
+          description: La sala o el jugador indicado no existen.
           content:
             application/json:
               schema:
@@ -100,9 +114,12 @@ paths:
       tags: [rules]
       operationId: getRules
       summary: Reglas del juego
+      description: |
+        Devuelve el resumen oficial de reglas, cartas especiales y notas de implementacion
+        que el cliente usa para documentar la experiencia del juego.
       responses:
         '200':
-          description: Reglas resumidas
+          description: Reglas resumidas del juego y notas funcionales del backend.
           content:
             application/json:
               schema:
@@ -111,127 +128,175 @@ components:
   schemas:
     PlayerRequest:
       type: object
+      description: Solicitud base para registrar a un jugador en una sala.
       required: [playerName]
       properties:
         playerName:
           type: string
           minLength: 1
+          description: Nombre visible del jugador dentro del lobby y la partida.
     RoomJoinResponse:
       type: object
+      description: Respuesta entregada cuando un jugador crea o se une exitosamente a una sala.
       properties:
         roomCode:
           type: string
+          description: Codigo corto que identifica la sala creada o a la que se ingreso.
         playerId:
           type: string
+          description: Identificador unico del jugador dentro de la sala.
         state:
+          description: Vista inicial del estado de la sala para ese jugador.
           $ref: '#/components/schemas/GameView'
     GameView:
       type: object
+      description: Vista del estado de juego filtrada para un jugador especifico.
       properties:
         roomCode:
           type: string
+          description: Codigo unico de la sala a la que pertenece la partida.
         playerId:
           type: string
+          description: Identificador del jugador dueño de esta vista.
         playerName:
           type: string
+          description: Nombre visible del jugador dueño de esta vista.
         started:
           type: boolean
+          description: Indica si la partida ya fue iniciada por el anfitrion.
         host:
           type: boolean
+          description: Indica si el jugador actual es el anfitrion de la sala.
         currentTurn:
           type: boolean
+          description: Indica si actualmente es el turno del jugador dueño de esta vista.
         winnerId:
           type: string
           nullable: true
+          description: Identificador del jugador ganador cuando la partida ya termino.
         winnerName:
           type: string
           nullable: true
+          description: Nombre visible del ganador cuando existe uno.
         matchRank:
           type: string
           nullable: true
+          description: Valor o rango que actualmente define la jugada valida sobre la mesa.
         matchSuit:
           type: string
           nullable: true
+          description: Palo activo que actualmente define la jugada valida sobre la mesa.
         pendingDraw:
           type: integer
+          description: Cantidad de cartas que el siguiente jugador debe robar por un ataque acumulado.
         drawPileCount:
           type: integer
+          description: Numero de cartas restantes en el mazo cerrado.
         hand:
           type: array
+          description: Mano privada del jugador actual.
           items:
             $ref: '#/components/schemas/CardView'
         discard:
           type: array
+          description: Historial reciente de cartas visibles en el descarte.
           items:
             $ref: '#/components/schemas/CardView'
         players:
           type: array
+          description: Resumen publico de los jugadores presentes en la sala.
           items:
             $ref: '#/components/schemas/PlayerSummary'
         log:
           type: array
+          description: Bitacora reciente de eventos relevantes en la partida.
           items:
             type: string
         version:
           type: integer
+          description: Version incremental del estado, util para sincronizacion cliente-servidor.
     CardView:
       type: object
+      description: Representacion serializable de una carta visible para el cliente.
       properties:
         id:
           type: string
+          description: Identificador unico de la carta dentro de la partida.
         rank:
           type: string
+          description: Valor o rango de la carta, por ejemplo A, 8, Q o JOKER.
         suit:
           type: string
+          description: Palo de la carta o JOKER cuando aplica.
         label:
           type: string
+          description: Texto legible de la carta para mostrar en interfaz.
     PlayerSummary:
       type: object
+      description: Resumen publico de un jugador dentro de la sala o partida.
       properties:
         id:
           type: string
+          description: Identificador unico del jugador.
         name:
           type: string
+          description: Nombre visible del jugador.
         cardCount:
           type: integer
+          description: Cantidad de cartas que el jugador mantiene en su mano.
         host:
           type: boolean
+          description: Indica si el jugador es anfitrion de la sala.
         currentTurn:
           type: boolean
+          description: Indica si actualmente es el turno de ese jugador.
         winner:
           type: boolean
+          description: Indica si ese jugador ya gano la partida.
     RulesView:
       type: object
+      description: Documento resumido de reglas y notas funcionales mostrado por el cliente.
       properties:
         gameName:
           type: string
+          description: Nombre comercial del juego.
         basics:
           type: array
+          description: Reglas generales y setup base de la partida.
           items:
             type: string
         poweredCards:
           type: array
+          description: Lista de cartas especiales y sus efectos principales.
           items:
             type: string
         implementationNotes:
           type: array
+          description: Notas de alcance del backend actual respecto a las reglas completas.
           items:
             type: string
     ErrorResponse:
       type: object
+      description: Estructura estandar para errores REST expuestos por el backend.
       properties:
         timestamp:
           type: string
           format: date-time
+          description: Fecha y hora en la que se produjo el error.
         status:
           type: integer
+          description: Codigo HTTP asociado al error.
         error:
           type: string
+          description: Nombre corto del error HTTP.
         message:
           type: string
+          description: Mensaje funcional pensado para diagnostico o visualizacion en cliente.
         path:
           type: string
+          description: Ruta HTTP que produjo el error.
         details:
           type: array
+          description: Lista opcional de detalles adicionales del error o validaciones fallidas.
           items:
             type: string
