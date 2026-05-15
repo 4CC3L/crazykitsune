@@ -1,0 +1,289 @@
+<main class="shell">
+  <section class="hero panel">
+    <div>
+      <p class="eyebrow">Multijugador en tiempo real · Spring Boot + Angular</p>
+      <h1>CRAZY KITSUNE</h1>
+      <p class="hero-copy">
+        Sala de espera, cartas privadas por jugador y una mesa compartida para lanzar, atacar,
+        robar y cambiar el palo sin perderse en la interfaz.
+      </p>
+    </div>
+
+    <div class="hero-actions">
+      <button type="button" class="ghost" [class.active]="section() === 'rules'" (click)="setSection('rules')">Reglas</button>
+      <button type="button" class="ghost" [class.active]="section() === 'lobby'" (click)="setSection('lobby')">Sala</button>
+      <button type="button" class="ghost" [class.active]="section() === 'table'" (click)="setSection('table')">Partida</button>
+    </div>
+  </section>
+
+  <section class="status-row">
+    <div class="status-chip" [class.connected]="connected()">
+      <span class="dot"></span>
+      {{ connected() ? 'Realtime conectado' : 'Realtime pendiente' }}
+    </div>
+    @if (activity()) {
+      <div class="status-chip info">{{ activity() }}</div>
+    }
+    @if (error()) {
+      <div class="status-chip error">{{ error() }}</div>
+    }
+  </section>
+
+  <section class="workspace">
+    <article class="panel rules-panel" [class.focused]="section() === 'rules'">
+      <div class="panel-head">
+        <p class="panel-kicker">Seccion 1</p>
+        <h2>Reglas del juego</h2>
+      </div>
+
+      @if (rules(); as currentRules) {
+        <div class="rule-block">
+          <h3>{{ currentRules.gameName }}</h3>
+          <ul>
+            @for (item of currentRules.basics; track trackText($index, item)) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+
+        <div class="rule-block">
+          <h3>Cartas con poder</h3>
+          <ul>
+            @for (item of currentRules.poweredCards; track trackText($index, item)) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+
+        <div class="rule-block">
+          <h3>Notas de esta version</h3>
+          <ul>
+            @for (item of currentRules.implementationNotes; track trackText($index, item)) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @for (sectionItem of detailedRuleSections; track sectionItem.title) {
+        <div class="rule-block secondary">
+          <h3>{{ sectionItem.title }}</h3>
+          <ul>
+            @for (item of sectionItem.bullets; track trackText($index, item)) {
+              <li>{{ item }}</li>
+            }
+          </ul>
+        </div>
+      }
+    </article>
+
+    <article class="panel lobby-panel" [class.focused]="section() === 'lobby'">
+      <div class="panel-head">
+        <p class="panel-kicker">Seccion 2</p>
+        <h2>Sala de espera</h2>
+      </div>
+
+      @if (!joined()) {
+        <div class="form-grid">
+          <label class="field">
+            <span>Tu nombre</span>
+            <input [ngModel]="playerName()" (ngModelChange)="setPlayerName($event)" maxlength="24" placeholder="Ej. KitsuneRoja" />
+          </label>
+
+          <div class="action-grid">
+            <button type="button" class="primary" [disabled]="busy() || !playerName().trim()" (click)="createRoom()">
+              {{ busy() ? 'Creando...' : 'Crear sala' }}
+            </button>
+          </div>
+
+          <label class="field">
+            <span>Codigo de sala</span>
+            <input [ngModel]="joinCode()" (ngModelChange)="setJoinCode($event)" maxlength="5" placeholder="AB12C" />
+          </label>
+
+          <div class="action-grid compact">
+            <button type="button" class="secondary" [disabled]="busy() || !playerName().trim() || !joinCode().trim()" (click)="joinRoom()">
+              Unirse a sala
+            </button>
+          </div>
+        </div>
+      } @else if (state(); as game) {
+        <div class="room-banner">
+          <div>
+            <p class="muted">Codigo</p>
+            <strong>{{ game.roomCode }}</strong>
+          </div>
+          <div>
+            <p class="muted">Jugador</p>
+            <strong>{{ game.playerName }}</strong>
+          </div>
+          <div>
+            <p class="muted">Estado</p>
+            <strong>{{ game.started ? 'En juego' : 'Esperando inicio' }}</strong>
+          </div>
+        </div>
+
+        <div class="player-list">
+          @for (player of game.players; track trackPlayer($index, player)) {
+            <div class="player-row" [class.turn]="player.currentTurn" [class.winner]="player.winner">
+              <div>
+                <strong>{{ player.name }}</strong>
+                <span>{{ player.host ? 'Host' : 'Jugador' }}</span>
+              </div>
+              <div class="player-meta">
+                <span>{{ player.cardCount }} cartas</span>
+                @if (player.currentTurn) {
+                  <span>Turno</span>
+                }
+                @if (player.winner) {
+                  <span>Ganador</span>
+                }
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="action-grid room-actions">
+          @if (!game.started) {
+            <button type="button" class="primary" [disabled]="!game.host || !connected()" (click)="startGame()">Iniciar partida</button>
+          }
+          <button type="button" class="ghost" (click)="refreshState()">Actualizar</button>
+          <button type="button" class="ghost" (click)="leaveRoom()">Salir</button>
+        </div>
+      }
+    </article>
+
+    <article class="panel table-panel" [class.focused]="section() === 'table'">
+      <div class="panel-head">
+        <p class="panel-kicker">Seccion 3</p>
+        <h2>Sala del juego</h2>
+      </div>
+
+      @if (state(); as game) {
+        @if (!game.started) {
+          <div class="empty-state">
+            <p>La mesa se habilita apenas el anfitrion inicia la partida.</p>
+          </div>
+        } @else {
+          <div class="table-grid">
+            <section class="board-top">
+              <div class="stack-card draw-stack">
+                <span>Mazo</span>
+                <strong>{{ game.drawPileCount }}</strong>
+                <small>cartas cerradas</small>
+              </div>
+
+              <div class="stack-card discard-stack">
+                <span>Se juega por</span>
+                <strong>{{ game.matchRank || '?' }} / {{ game.matchSuit ? suitLabels[game.matchSuit] : 'Libre' }}</strong>
+                <small>{{ game.pendingDraw > 0 ? 'Ataque pendiente: ' + game.pendingDraw : 'Sin ataque pendiente' }}</small>
+              </div>
+
+              <div class="stack-card turn-stack">
+                <span>Tu estado</span>
+                <strong>{{ game.currentTurn ? 'Tu turno' : 'Esperando' }}</strong>
+                <small>@if (game.winnerName) { Gano {{ game.winnerName }} } @else { {{ game.hand.length }} cartas en mano }</small>
+              </div>
+            </section>
+
+            <section class="opponents-panel subpanel">
+              <div class="subpanel-head">
+                <h3>Jugadores</h3>
+              </div>
+              <div class="opponents-grid">
+                @for (player of opponents(); track trackPlayer($index, player)) {
+                  <div class="opponent-card" [class.turn]="player.currentTurn" [class.winner]="player.winner">
+                    <strong>{{ player.name }}</strong>
+                    <span>{{ player.cardCount }} cartas</span>
+                  </div>
+                }
+              </div>
+            </section>
+
+            <section class="history-panel subpanel">
+              <div class="subpanel-head">
+                <h3>Cartas lanzadas</h3>
+              </div>
+              <div class="discard-list">
+                @for (card of game.discard; track card.id) {
+                  <div class="discard-card">{{ card.label }}</div>
+                }
+              </div>
+            </section>
+
+            <section class="controls-panel subpanel">
+              <div class="subpanel-head">
+                <h3>Acciones</h3>
+              </div>
+
+              <div class="control-group">
+                <label class="field inline-field">
+                  <span>Palo declarado</span>
+                  <select [ngModel]="declaredSuit()" (ngModelChange)="setDeclaredSuit($event)">
+                    @for (suit of suits; track suit) {
+                      <option [ngValue]="suit">{{ suitLabels[suit] }}</option>
+                    }
+                  </select>
+                </label>
+
+                <label class="field inline-field">
+                  <span>Objetivo A</span>
+                  <select [ngModel]="targetPlayerId()" (ngModelChange)="setTargetPlayerId($event)">
+                    <option value="">Sin objetivo</option>
+                    @for (player of opponents(); track trackPlayer($index, player)) {
+                      <option [value]="player.id">{{ player.name }}</option>
+                    }
+                  </select>
+                </label>
+              </div>
+
+              <div class="action-grid control-actions">
+                <button type="button" class="primary" [disabled]="!canPlay() || !connected()" (click)="playSelected()">Jugar seleccionadas</button>
+                <button type="button" class="secondary" [disabled]="!game.currentTurn || !!game.winnerId || !connected()" (click)="draw(false)">Robar del mazo</button>
+                <button type="button" class="secondary" [disabled]="!game.currentTurn || !!game.winnerId || !connected()" (click)="draw(true)">Robar descarte</button>
+                <button type="button" class="ghost" [disabled]="!game.currentTurn || !!game.winnerId || !connected()" (click)="pass()">Pasar</button>
+              </div>
+            </section>
+
+            <section class="log-panel subpanel">
+              <div class="subpanel-head">
+                <h3>Bitacora</h3>
+              </div>
+              <div class="log-list">
+                @for (entry of game.log; track trackText($index, entry)) {
+                  <p>{{ entry }}</p>
+                }
+              </div>
+            </section>
+
+            <section class="hand-panel subpanel">
+              <div class="subpanel-head">
+                <h3>Tu mazo</h3>
+                <p>{{ selectedCardIds().length }} seleccionada(s)</p>
+              </div>
+
+              <div class="hand-grid">
+                @for (card of game.hand; track card.id) {
+                  <button
+                    type="button"
+                    class="hand-card"
+                    [class.selected]="selectedCardIds().includes(card.id)"
+                    (click)="toggleCard(card.id)"
+                  >
+                    <span class="rank">{{ card.rank }}</span>
+                    <strong>{{ card.label }}</strong>
+                    <small>{{ card.suit === 'JOKER' ? 'Comodin' : suitLabels[card.suit] }}</small>
+                  </button>
+                }
+              </div>
+            </section>
+          </div>
+        }
+      } @else {
+        <div class="empty-state">
+          <p>Crea o unete a una sala para ver la mesa y tu mano privada.</p>
+        </div>
+      }
+    </article>
+  </section>
+</main>
